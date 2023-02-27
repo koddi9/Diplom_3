@@ -1,5 +1,3 @@
-package util;
-
 import io.qameta.allure.Description;
 import io.qameta.allure.junit4.DisplayName;
 import io.restassured.RestAssured;
@@ -11,8 +9,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static org.hamcrest.Matchers.equalTo;
-import static util.UserTestUtil.createTestUser;
-import static util.UserTestUtil.deleteTestUser;
+import static util.UserTestUtil.*;
 
 public class UserEditingTest {
 
@@ -26,25 +23,25 @@ public class UserEditingTest {
     @DisplayName("Check editing user is possible")
     @Description("Returns 200 code and body with success: true status")
     public void EditingAuthorizedUserTest() {
-        User newUser = new User("test6@email.com", "12345TeSt", "nikita");
+        User newUser = new User("test666@email.com", "12345TeSt", "nikita");
 
-        Response response = createTestUser(newUser);
-
-        response.then().statusCode(200).and().assertThat().body("success", equalTo(true));
-        String at = response.getBody().as(ResponseAuth.class).getAccessToken();
+        Response createResponse = createTestUser(newUser);
+        String at = createResponse.getBody().as(ResponseAuth.class).getAccessToken();
+        newUser.setName("nikolay");
+        Response editResponse = editTestUser(newUser, at);
+        editResponse.then().statusCode(200).and().assertThat().body("success", equalTo(true));
         deleteTestUser(newUser, at);
     }
 
     @Test
-    @DisplayName("Check creating user is possible")
-    @Description("Returns 200 code and body with success: true status")
+    @DisplayName("Check editing unauthorized user is impossible")
+    @Description("Returns 401 code and body with description error message")
     public void EditingUnauthorizedUserTest() {
-        User newUser = new User("test11@email.com", "12345TeSt", "nikita");
+        User newUser = new User("test777@email.com", "12345TeSt", "nikita");
 
-        Response response = createTestUser(newUser);
+        Response response = editTestUser(newUser,"");
 
-        response.then().statusCode(200).and().assertThat().body("success", equalTo(true));
-        String at = response.getBody().as(ResponseAuth.class).getAccessToken();
-        deleteTestUser(newUser, at);
+        response.then().statusCode(401).and()
+                .assertThat().body("message", equalTo("You should be authorised"));
     }
 }
